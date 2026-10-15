@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Office temporary lock files
+~$*.docx
+~$*.pptx
+~$*.xlsx
+
+# OS generated
+.DS_Store
+Thumbs.db
