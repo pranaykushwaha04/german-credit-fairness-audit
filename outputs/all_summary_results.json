@@ -1,0 +1,58 @@
+{
+    "summary_stats": {
+        "total_samples": 1000,
+        "num_features_raw": 20,
+        "approval_count": 700,
+        "approval_rate": 0.7,
+        "rejection_count": 300,
+        "rejection_rate": 0.3,
+        "male_count": 690,
+        "male_approval_rate": 0.7231884057971014,
+        "female_count": 310,
+        "female_approval_rate": 0.6483870967741936
+    },
+    "part1_results": {
+        "model_a_median": 0.7151301745845726,
+        "model_a_min": -0.021144317328342647,
+        "model_a_max": 1.3458868532272366,
+        "model_b_prob_min": 0.06277300846229578,
+        "model_b_prob_max": 0.994602097456265,
+        "model_a_pos_count": 150,
+        "model_b_pos_count": 240,
+        "cm_matrix": [
+            [
+                60,
+                0
+            ],
+            [
+                90,
+                150
+            ]
+        ],
+        "mismatches": 90,
+        "mismatch_pct": 30.0,
+        "model_a_acc": 0.68,
+        "model_b_acc": 0.7533333333333333
+    },
+    "adv_stats": {
+        "total_test": 300,
+        "fp_high_count": 21,
+        "fn_high_count": 3,
+        "total_adv_count": 24,
+        "adv_percentage": 8.0,
+        "test_mean_age": 35.49,
+        "adv_mean_age": 33.916666666666664,
+        "test_female_pct": 28.333333333333332,
+        "adv_female_pct": 20.833333333333336,
+        "test_foreign_pct": 95.66666666666667,
+        "adv_foreign_pct": 91.66666666666666,
+        "test_own_housing_pct": 74.0,
+        "adv_own_housing_pct": 83.33333333333334,
+        "test_mean_amount": 3040.1833333333334,
+        "adv_mean_amount": 3337.5,
+        "test_mean_duration": 20.876666666666665,
+        "adv_mean_duration": 20.208333333333332,
+        "adv_checking_A12_pct": 45.83333333333333,
+        "test_checking_A12_pct": 23.0
+    }
+}
