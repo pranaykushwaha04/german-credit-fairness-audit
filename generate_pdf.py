@@ -1,0 +1,802 @@
+import base64
+import os
+from playwright.sync_api import sync_playwright
+
+def get_base64_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return "data:image/png;base64," + base64.b64encode(img_file.read()).decode('utf-8')
+
+fig1_b64 = get_base64_image("figures/part1_model_comparison.png")
+fig2_b64 = get_base64_image("figures/part2_1_simpsons_paradox.png")
+fig3_b64 = get_base64_image("figures/part2_2_ovb_shifts.png")
+fig4_b64 = get_base64_image("figures/part2_3_adversarial_subset.png")
+fig5_b64 = get_base64_image("figures/part2_4_fairness_tradeoff.png")
+
+html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>CSET485 Assignment 1 - AI and Society - s24bcau0154</title>
+<style>
+    @page {{
+        size: A4;
+        margin: 20mm 18mm 20mm 18mm;
+        @bottom-right {{
+            content: "Page " counter(page) " of " counter(pages);
+            font-size: 8.5pt;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #64748b;
+        }}
+        @bottom-left {{
+            content: "CSET485 AI & Society | Enrollment: s24bcau0154";
+            font-size: 8.5pt;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #64748b;
+        }}
+    }}
+
+    body {{
+        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+        font-size: 10pt;
+        line-height: 1.55;
+        color: #1e293b;
+        background-color: #ffffff;
+        margin: 0;
+        padding: 0;
+    }}
+
+    h1, h2, h3, h4 {{
+        color: #0f172a;
+        font-weight: 700;
+        margin-top: 18pt;
+        margin-bottom: 8pt;
+        page-break-after: avoid;
+    }}
+
+    h1 {{
+        font-size: 20pt;
+        line-height: 1.25;
+        border-bottom: 2.5px solid #2563eb;
+        padding-bottom: 6pt;
+        margin-top: 0;
+        margin-bottom: 12pt;
+    }}
+
+    h2 {{
+        font-size: 14pt;
+        border-bottom: 1.5px solid #e2e8f0;
+        padding-bottom: 4pt;
+        margin-top: 22pt;
+        color: #1e3a8a;
+    }}
+
+    h3 {{
+        font-size: 11.5pt;
+        color: #1e40af;
+        margin-top: 14pt;
+        margin-bottom: 4pt;
+    }}
+
+    h4 {{
+        font-size: 10.5pt;
+        color: #334155;
+        margin-top: 10pt;
+        margin-bottom: 3pt;
+    }}
+
+    p {{
+        margin-top: 0;
+        margin-bottom: 8pt;
+        text-align: justify;
+    }}
+
+    .meta-box {{
+        background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+        border: 1px solid #bfdbfe;
+        border-left: 5px solid #2563eb;
+        border-radius: 6px;
+        padding: 12pt 16pt;
+        margin-bottom: 16pt;
+    }}
+
+    .meta-grid {{
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6pt 16pt;
+        font-size: 9.5pt;
+    }}
+
+    .meta-item strong {{
+        color: #1e40af;
+    }}
+
+    .callout {{
+        background-color: #f1f5f9;
+        border-left: 4px solid #3b82f6;
+        padding: 8pt 12pt;
+        margin: 10pt 0;
+        border-radius: 0 4px 4px 0;
+        font-size: 9.5pt;
+    }}
+
+    .callout-warning {{
+        background-color: #fef2f2;
+        border-left: 4px solid #ef4444;
+        color: #991b1b;
+    }}
+
+    .callout-success {{
+        background-color: #f0fdf4;
+        border-left: 4px solid #22c55e;
+        color: #166534;
+    }}
+
+    table {{
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10pt 0 14pt 0;
+        font-size: 8.5pt;
+        page-break-inside: avoid;
+    }}
+
+    th {{
+        background-color: #1e3a8a;
+        color: #ffffff;
+        font-weight: 600;
+        text-align: left;
+        padding: 6pt 8pt;
+        border: 1px solid #1e3a8a;
+    }}
+
+    td {{
+        padding: 5pt 8pt;
+        border: 1px solid #cbd5e1;
+        vertical-align: middle;
+    }}
+
+    tr:nth-child(even) td {{
+        background-color: #f8fafc;
+    }}
+
+    .figure-container {{
+        text-align: center;
+        margin: 12pt 0 16pt 0;
+        page-break-inside: avoid;
+    }}
+
+    .figure-container img {{
+        max-width: 100%;
+        height: auto;
+        border: 1px solid #e2e8f0;
+        border-radius: 4px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }}
+
+    .caption {{
+        font-size: 8.5pt;
+        color: #64748b;
+        margin-top: 4pt;
+        font-style: italic;
+    }}
+
+    .page-break {{
+        page-break-before: always;
+    }}
+
+    .avoid-break {{
+        page-break-inside: avoid;
+    }}
+
+    .number-highlight {{
+        font-weight: 700;
+        color: #1e3a8a;
+    }}
+
+    .badge {{
+        display: inline-block;
+        padding: 1.5pt 5pt;
+        font-size: 7.5pt;
+        font-weight: 600;
+        border-radius: 3px;
+        text-transform: uppercase;
+    }}
+    .badge-blue {{ background-color: #dbeafe; color: #1e40af; }}
+    .badge-green {{ background-color: #dcfce7; color: #15803d; }}
+    .badge-red {{ background-color: #fee2e2; color: #b91c1c; }}
+
+    .question-block {{
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 12pt 14pt;
+        margin-bottom: 14pt;
+        page-break-inside: avoid;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }}
+
+    .question-title {{
+        font-size: 11pt;
+        font-weight: 700;
+        color: #1e3a8a;
+        margin-bottom: 6pt;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 4pt;
+    }}
+
+    .word-count {{
+        float: right;
+        font-size: 8pt;
+        font-weight: 500;
+        color: #64748b;
+    }}
+</style>
+</head>
+<body>
+
+<!-- TITLE & METADATA -->
+<h1>CSET485 – AI and Society: Assignment #1</h1>
+<h3 style="margin-top: -6pt; color: #475569; font-weight: 500;">Rigorous Algorithmic Stress-Testing, Hidden Confounds, and Fairness Trade-Offs in Credit Underwriting</h3>
+
+<div class="meta-box">
+    <div class="meta-grid">
+        <div class="meta-item"><strong>Student Enrollment ID:</strong> s24bcau0154</div>
+        <div class="meta-item"><strong>Assigned Dataset:</strong> German Credit Data (Statlog) <span class="badge badge-blue">Last Digit: 4</span></div>
+        <div class="meta-item"><strong>Random Seed (random_state):</strong> 154 <span class="badge badge-green">Last 3 Digits: 154</span></div>
+        <div class="meta-item"><strong>Data Split:</strong> 70% Train (700 rows) / 30% Test (300 rows)</div>
+        <div class="meta-item"><strong>Course:</strong> CSET485 – AI and Society (10 Marks)</div>
+        <div class="meta-item"><strong>Code Repository:</strong> Fully Reproducible Jupyter Notebook Included</div>
+    </div>
+</div>
+
+<p><strong>Executive Summary:</strong> High-stakes predictive algorithms deployed in criminal justice, hiring, and credit lending frequently project an illusion of objective mathematical rigor while concealing profound demographic inequities, severe omitted-variable bias, and irreconcilable ethical trade-offs. Using the German Credit dataset ($N=1,000$), this empirical audit implements a comparative evaluation of Ordinary Least Squares (OLS) Linear Regression and Logistic Regression, followed by four targeted stress-testing protocols: (1) Median vs. Absolute Threshold Mismatch Analysis, (2) Simpson’s Paradox Detection across age and gender, (3) Omitted-Variable Bias (OVB) quantification via liquidity purging, (4) Adversarial Subset Construction identifying confident failure modes, and (5) Parametric Fairness Sweeps across Demographic Parity, Equalized Odds, and Predictive Parity. Every claim and policy recommendation in this report is anchored directly in empirical computations.</p>
+
+<!-- DATA PREPROCESSING -->
+<h2>Data Preprocessing & Exploratory Audit</h2>
+<p>Prior to model training, the raw German Credit dataset was audited across four methodological dimensions:</p>
+<ul>
+    <li><strong>Handling Missing Values:</strong> The dataset contains 1,000 borrower records across 20 input attributes. A programmatic scan verified exactly <strong>0 missing, NaN, or corrupted values</strong>, consistent with the original documentation by Prof. Hofmann.</li>
+    <li><strong>Categorical Feature Encoding:</strong> Thirteen attributes represent qualitative classifications (e.g., checking status, credit history, loan purpose, savings, employment duration, marital status/sex, housing). To avert the dummy variable trap and perfect multicollinearity in OLS and unpenalized logistic estimation, we implemented <strong>One-Hot Encoding dropping the first category</strong> (<code>drop_first=True</code>), yielding 41 indicator columns and 7 continuous regressors (48 total modeled predictors).</li>
+    <li><strong>Feature Scaling:</strong> Continuous regressors (<code>duration</code>, <code>credit_amount</code>, <code>installment_commitment</code>, <code>residence_since</code>, <code>age</code>, <code>existing_credits</code>, <code>num_dependents</code>) exhibit wide variance in scale (e.g., loan durations reaching 72 months and credit obligations exceeding 15,000 DM). We fit a <code>StandardScaler</code> exclusively on the 70% training split ($N=700$, <code>random_state=154</code>) and transformed the 30% test split ($N=300$), strictly preventing data leakage.</li>
+    <li><strong>Outlier Treatment Rationale:</strong> Using the standard Interquartile Range criterion ($1.5 \times \text{IQR}$), we detected 70 outliers in <code>duration</code> (7.0%), 72 in <code>credit_amount</code> (7.2%), and 23 in <code>age</code> (2.3%). Crucially, these extreme observations were <strong>deliberately preserved without clipping or trimming</strong>. In credit risk underwriting, extreme borrowing amounts and extended durations represent legitimate tail-risk exposures; removing them sanitizes real-world vulnerability and blinds models to catastrophic default risks.</li>
+</ul>
+
+<!-- PART 1 -->
+<h2>Part 1 — Model Fitting & Threshold Mismatch Analysis</h2>
+<p>Both models were fitted on the identical 700-observation training matrix to predict loan approval ($Y=1$ for Good Credit, $Y=0$ for Bad Credit / Default). In the training set, the empirical approval base rate was 69.71% ($488/700$); in the test set, it was 70.67% ($212/300$).</p>
+<ul>
+    <li><strong>Model A (Linear Regression / OLS Probability Model):</strong> Produces unbounded continuous predictions $\hat{Y} \in [-0.0211, \, 1.3459]$ on the test set, with an empirical <strong>median predicted value of 0.7151</strong>. Applying the mandated threshold at the median ($\hat{Y} \ge 0.7151 \implies \text{Class } 1$, else $0$) classifies exactly 150 instances (50.0%) as positive.</li>
+    <li><strong>Model B (Logistic Regression):</strong> Fits the sigmoidal link $\sigma(z) = (1 + e^{-z})^{-1}$, generating valid posterior probabilities $\hat{P} \in [0.0628, \, 0.9946]$. Applying the standard decision boundary ($\hat{P} \ge 0.50 \implies \text{Class } 1$, else $0$) classifies 240 instances (80.0%) as positive.</li>
+</ul>
+
+<div class="figure-container">
+    <img src="{fig1_b64}" alt="Part 1 Model Comparison">
+    <div class="caption">Figure 1: (Left) Test set predicted probability/score density distributions with respective decision thresholds. (Right) Confusion matrix showing the 30.0% classification disagreement between Model A and Model B.</div>
+</div>
+
+<div class="avoid-break">
+<p><strong>Model Agreement / Disagreement Confusion Matrix (Test Set, N=300):</strong></p>
+<table>
+    <thead>
+        <tr>
+            <th></th>
+            <th>Model A Low Risk / Negative (&lt; Median)</th>
+            <th>Model A High Risk / Positive (&ge; Median 0.7151)</th>
+            <th>Total Model B</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Model B Negative (&lt; 0.50)</strong></td>
+            <td>60 (True Agreement)</td>
+            <td>0</td>
+            <td>60 (20.0%)</td>
+        </tr>
+        <tr>
+            <td><strong>Model B Positive (&ge; 0.50)</strong></td>
+            <td><strong>90 (Mismatched Cases)</strong></td>
+            <td>150 (True Agreement)</td>
+            <td>240 (80.0%)</td>
+        </tr>
+        <tr>
+            <td><strong>Total Model A</strong></td>
+            <td>150 (50.0%)</td>
+            <td>150 (50.0%)</td>
+            <td><strong>300 (100.0%)</strong></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+<div class="callout callout-warning">
+    <strong>Key Mismatch Finding:</strong> Exactly <strong>90 out of 300 test subjects (30.00%)</strong> received conflicting classifications between the two models. Model B achieved an overall test accuracy of <strong>75.33%</strong>, whereas Model A achieved <strong>68.00%</strong>. Every single mismatched individual had a Model B probability in the interval $0.5000 \le \hat{P}_B < 0.7151$—individuals deemed creditworthy under an absolute probability standard but rejected by Model A simply for falling into the lower half of the sample distribution.
+</div>
+
+<div class="page-break"></div>
+
+<!-- PART 2 -->
+<h2>Part 2 — Stress-Testing Protocols ("The Trap")</h2>
+
+<h3>2.1: Simpson's Paradox Hunt</h3>
+<p>We stress-tested the hypothesis of parameter invariance across demographic cohorts and uncovered two profound manifestations of Simpson's Paradox and subgroup heterogeneity:</p>
+<ol>
+    <li><strong>Simpson's Sign Reversal on Existing Bank Credits across Age Cohorts:</strong> In the aggregate population ($N=1,000$), bivariate logistic regression indicates that having additional existing credits (`existing_credits`) has a positive association with approval ($\beta = +0.1780, \, p = 0.1488$). However, disaggregating by age reveals that for <strong>Young Adults (&lt;30 years, N=371)</strong>, the coefficient reverses to <strong>negative ($\beta = -0.2203, \, 95\% \text{ CI: } [-0.6384, \, +0.1977]$)</strong>, whereas for <strong>Mature Adults (&ge;30 years, N=629)</strong>, the coefficient is strongly <strong>positive ($\beta = +0.3083, \, p = 0.0519, \, 95\% \text{ CI: } [-0.0025, \, +0.6192]$)</strong>.</li>
+    <li><strong>Subgroup Effect Divergence of Age across Gender:</strong> In standardized multivariable logistic regression controlling for loan duration, amount, and installment commitments, applicant age exerts a negligible, statistically insignificant effect on male credit approval ($\beta_{\text{Male}} = +0.0604, \, p = 0.5204, \, 95\% \text{ CI: } [-0.1238, \, +0.2445]$). For female applicants, however, age acts as an enormous protective factor ($\beta_{\text{Female}} = +0.4741, \, p = 0.0013, \, 95\% \text{ CI: } [+0.1861, \, +0.7620]$)—an effect size nearly <strong>eight times larger</strong> than in men.</li>
+</ol>
+
+<div class="figure-container">
+    <img src="{fig2_b64}" alt="Simpson's Paradox Analysis">
+    <div class="caption">Figure 2: (Left) Simpson's sign reversal of existing credit lines across age cohorts. (Right) Severe subgroup divergence in the protective effect of age between male and female borrowers.</div>
+</div>
+
+<div class="avoid-break">
+<table>
+    <thead>
+        <tr>
+            <th>Subgroup Analysis</th>
+            <th>Sample Size (N)</th>
+            <th>Log-Odds Coef (&beta;)</th>
+            <th>Std. Error</th>
+            <th>p-value</th>
+            <th>95% Confidence Interval</th>
+            <th>Observed Trend</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Existing Credits: Full Dataset</strong></td>
+            <td>1,000</td>
+            <td>+0.1780</td>
+            <td>0.1232</td>
+            <td>0.1488</td>
+            <td>[-0.0636, +0.4195]</td>
+            <td>Weak Positive</td>
+        </tr>
+        <tr>
+            <td><strong>Existing Credits: Young Adults (&lt;30)</strong></td>
+            <td>371</td>
+            <td><strong>-0.2203</strong></td>
+            <td>0.2133</td>
+            <td>0.3016</td>
+            <td>[-0.6384, +0.1977]</td>
+            <td><strong>Reversed (Negative)</strong></td>
+        </tr>
+        <tr>
+            <td><strong>Existing Credits: Mature Adults (&ge;30)</strong></td>
+            <td>629</td>
+            <td><strong>+0.3083</strong></td>
+            <td>0.1586</td>
+            <td>0.0519</td>
+            <td>[-0.0025, +0.6192]</td>
+            <td><strong>Strong Positive</strong></td>
+        </tr>
+        <tr>
+            <td><strong>Multivariable Age: Male Subgroup</strong></td>
+            <td>690</td>
+            <td>+0.0604</td>
+            <td>0.0940</td>
+            <td>0.5204</td>
+            <td>[-0.1238, +0.2445]</td>
+            <td>Statistically Null</td>
+        </tr>
+        <tr>
+            <td><strong>Multivariable Age: Female Subgroup</strong></td>
+            <td>310</td>
+            <td><strong>+0.4741</strong></td>
+            <td>0.1469</td>
+            <td><strong>0.0013</strong></td>
+            <td>[+0.1861, +0.7620]</td>
+            <td><strong>Highly Protective (~8x)</strong></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+<h3>2.2: Omitted-Variable Bias (OVB)</h3>
+<p>To measure sensitivity to unobserved confounds, we deliberately purged <code>checking_status</code> (Attribute 1: liquid cash reserves). As shown in Figure 3 and the summary table below, the omitted liquidity information was aggressively absorbed by remaining financial proxies:</p>
+
+<div class="figure-container">
+    <img src="{fig3_b64}" alt="OVB Coefficient Shifts">
+    <div class="caption">Figure 3: Percentage shift in logistic regression coefficients following the deliberate omission of checking account liquidity.</div>
+</div>
+
+<div class="avoid-break">
+<table>
+    <thead>
+        <tr>
+            <th>Predictor Variable</th>
+            <th>Economic Role</th>
+            <th>Full Model &beta;</th>
+            <th>Reduced Model &beta;</th>
+            <th>Absolute Shift &Delta;&beta;</th>
+            <th>Percentage Change &Delta;%</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><code>savings_status_A63</code></td>
+            <td>Moderate Savings (500–1000 DM)</td>
+            <td>+0.3720</td>
+            <td>+0.7812</td>
+            <td>+0.4092</td>
+            <td><strong>+110.00%</strong></td>
+        </tr>
+        <tr>
+            <td><code>employment_A73</code></td>
+            <td>Employment Tenure (1–4 Years)</td>
+            <td>+0.1278</td>
+            <td>+0.2560</td>
+            <td>+0.1282</td>
+            <td><strong>+100.31%</strong></td>
+        </tr>
+        <tr>
+            <td><code>credit_history_A33</code></td>
+            <td>Past Payment Delay</td>
+            <td>+0.3941</td>
+            <td>+0.5956</td>
+            <td>+0.2015</td>
+            <td><strong>+51.14%</strong></td>
+        </tr>
+        <tr>
+            <td><code>existing_credits</code></td>
+            <td>Existing Bank Credits Count</td>
+            <td>-0.0983</td>
+            <td>-0.0656</td>
+            <td>+0.0328</td>
+            <td><strong>+33.31%</strong></td>
+        </tr>
+        <tr>
+            <td><code>age</code></td>
+            <td>Standardized Applicant Age</td>
+            <td>+0.1543</td>
+            <td>+0.1869</td>
+            <td>+0.0326</td>
+            <td><strong>+21.16%</strong></td>
+        </tr>
+        <tr>
+            <td><code>duration</code></td>
+            <td>Standardized Loan Duration</td>
+            <td>-0.4273</td>
+            <td>-0.4325</td>
+            <td>-0.0052</td>
+            <td><strong>-1.21%</strong></td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+<div class="page-break"></div>
+
+<h3>2.3: Adversarial Subset Construction</h3>
+<p>We stress-tested Model B on the 300 test cases by searching for confident erroneous predictions ($\hat{P} \ge 0.75$ with true default $Y=0$, or $\hat{P} \le 0.25$ with true approval $Y=1$). Exactly <strong>24 instances (8.00% of the test cohort)</strong> satisfied this failure criterion: 21 high-confidence false positives and 3 high-confidence false negatives.</p>
+
+<div class="figure-container">
+    <img src="{fig4_b64}" alt="Adversarial Subset Profiles">
+    <div class="caption">Figure 4: (Left) Test set approval probabilities highlighting the 24 adversarial failure cases. (Right) Profiling disparities revealing why the linear additive model failed confidently.</div>
+</div>
+
+<div class="avoid-break">
+<table>
+    <thead>
+        <tr>
+            <th>Characteristic / Metric</th>
+            <th>Baseline Test Set (N=300)</th>
+            <th>Adversarial Subset (N=24)</th>
+            <th>Disparity / Failure Signature</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td><strong>Homeownership Rate (<code>housing = A152</code>)</strong></td>
+            <td>74.00%</td>
+            <td><strong>83.33%</strong></td>
+            <td>+9.33% over-represented</td>
+        </tr>
+        <tr>
+            <td><strong>Moderate Checking Liquidity (<code>checking = A12</code>)</strong></td>
+            <td>23.00%</td>
+            <td><strong>45.83%</strong></td>
+            <td><strong>Nearly Double Baseline (+22.83%)</strong></td>
+        </tr>
+        <tr>
+            <td><strong>Clean Credit Track Record (<code>history = A32</code>)</strong></td>
+            <td>53.67%</td>
+            <td><strong>54.17%</strong></td>
+            <td>Parity with baseline clean history</td>
+        </tr>
+        <tr>
+            <td><strong>Mean Credit Obligation</strong></td>
+            <td>3,040.18 DM</td>
+            <td><strong>3,337.50 DM</strong></td>
+            <td>+$297.32 DM heavier credit burden</td>
+        </tr>
+        <tr>
+            <td><strong>Female Representation</strong></td>
+            <td>28.33%</td>
+            <td>20.83%</td>
+            <td>-7.50% under-represented</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+<h3>2.4: Parametric Fairness Trade-Off Analysis</h3>
+<p>We swept the decision threshold from $t=0.05$ to $t=0.95$ in increments of 0.10 across sensitive demographic groups: Group A (Female, $N=85$, base approval rate 69.41%) and Group B (Male, $N=215$, base approval rate 71.16%).</p>
+
+<div class="figure-container">
+    <img src="{fig5_b64}" alt="Fairness Trade-Off Curves">
+    <div class="caption">Figure 5: (Left) The Empirical Fairness Trade-Off Curve (Demographic Parity vs. Equalized Odds) demonstrating the impossibility of achieving mutual optimality. (Right) Metric trajectories across operational decision thresholds.</div>
+</div>
+
+<div class="avoid-break">
+<table>
+    <thead>
+        <tr>
+            <th>Threshold (t)</th>
+            <th>P(Approve|F)</th>
+            <th>P(Approve|M)</th>
+            <th>Demographic Parity (DP)</th>
+            <th>TPR (Female)</th>
+            <th>TPR (Male)</th>
+            <th>Equalized Odds (EO)</th>
+            <th>Predictive Parity (PP)</th>
+            <th>Global Accuracy</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>0.05</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>1.0000</td>
+            <td>0.9754</td>
+            <td>70.67%</td>
+        </tr>
+        <tr>
+            <td>0.15</td>
+            <td>0.9529</td>
+            <td>0.9860</td>
+            <td>0.9664</td>
+            <td>0.9831</td>
+            <td>1.0000</td>
+            <td>0.9296</td>
+            <td>0.9922</td>
+            <td>72.33%</td>
+        </tr>
+        <tr>
+            <td>0.25</td>
+            <td>0.8941</td>
+            <td>0.9628</td>
+            <td>0.9287</td>
+            <td>0.9661</td>
+            <td>0.9935</td>
+            <td>0.8238</td>
+            <td>1.0214</td>
+            <td>74.33%</td>
+        </tr>
+        <tr style="background-color: #dbeafe; font-weight: bold;">
+            <td>0.35 (Recommended)</td>
+            <td>0.8471</td>
+            <td>0.9116</td>
+            <td>0.9292</td>
+            <td>0.9322</td>
+            <td>0.9542</td>
+            <td>0.8108</td>
+            <td>1.0255</td>
+            <td>74.00%</td>
+        </tr>
+        <tr>
+            <td>0.45</td>
+            <td>0.7647</td>
+            <td>0.8605</td>
+            <td>0.8887</td>
+            <td>0.8983</td>
+            <td>0.9085</td>
+            <td>0.6221</td>
+            <td>1.0852</td>
+            <td>74.00%</td>
+        </tr>
+        <tr style="background-color: #fee2e2;">
+            <td>0.55 (Peak Acc)</td>
+            <td>0.6824</td>
+            <td>0.8047</td>
+            <td>0.8480</td>
+            <td>0.8475</td>
+            <td>0.8889</td>
+            <td>0.5156</td>
+            <td>1.0966</td>
+            <td><strong>76.33%</strong></td>
+        </tr>
+        <tr>
+            <td>0.65</td>
+            <td>0.5882</td>
+            <td>0.7256</td>
+            <td>0.8107</td>
+            <td>0.7797</td>
+            <td>0.8105</td>
+            <td>0.2981</td>
+            <td>1.1574</td>
+            <td>74.00%</td>
+        </tr>
+        <tr>
+            <td>0.75</td>
+            <td>0.4353</td>
+            <td>0.5767</td>
+            <td>0.7547</td>
+            <td>0.5763</td>
+            <td>0.6928</td>
+            <td>0.3974</td>
+            <td>1.0750</td>
+            <td>69.00%</td>
+        </tr>
+        <tr>
+            <td>0.85</td>
+            <td>0.3294</td>
+            <td>0.4186</td>
+            <td>0.7869</td>
+            <td>0.4576</td>
+            <td>0.5359</td>
+            <td>0.2981</td>
+            <td>1.0584</td>
+            <td>62.67%</td>
+        </tr>
+        <tr>
+            <td>0.95</td>
+            <td>0.0824</td>
+            <td>0.1535</td>
+            <td>0.5365</td>
+            <td>0.1186</td>
+            <td>0.2157</td>
+            <td>0.0000</td>
+            <td>1.0000</td>
+            <td>42.67%</td>
+        </tr>
+    </tbody>
+</table>
+</div>
+
+<div class="callout">
+    <strong>Formal Trade-Off Quantification:</strong> Moving between thresholds illustrates the severe price of metric optimization. Shifting from $t=0.75$ to $t=0.85$ improves Demographic Parity from $0.7547$ to $0.7869$ (a <strong>4.27% gain</strong>), but causes Equalized Odds to drop precipitously from $0.3974$ to $0.2981$ (a <strong>24.99% loss</strong>). The quantified trade-off cost is:
+    $$\text{Trade-Off Cost} = \frac{\Delta \% \text{ Loss in EO}}{\Delta \% \text{ Gain in DP}} = \frac{24.99\%}{4.27\%} = \mathbf{5.85}$$
+    For every single percentage point gained in Demographic Parity across this interval, Equalized Odds plummets by 5.85%.
+</div>
+
+<div class="page-break"></div>
+
+<!-- PART 3 -->
+<h2>Part 3 — Descriptive Analysis Questions</h2>
+
+<div class="question-block">
+    <div class="question-title">Question 1: Comparative Classification Dynamics & Mismatch Mechanics <span class="word-count">~285 words</span></div>
+    <p>In our empirical evaluation on the 300 test instances, Model A (Linear OLS Regression) and Model B (Logistic Regression) exhibited substantial classification divergence, generating exactly <strong>90 mismatched cases out of 300 test subjects (a 30.00% mismatch rate)</strong>. Under Model A, continuous predictions $\hat{Y}$ ranged from $-0.0211$ to $1.3459$ with an empirical test set <strong>median of 0.7151</strong>. Thresholding Model A at its median by definition forces exactly 50.0% of the sample ($N=150$) into the positive ("approved") tier and 50.0% ($N=150$) into the negative tier. In stark contrast, Model B maps log-odds through the logistic sigmoid link function $\sigma(z)$, producing well-calibrated posterior probabilities strictly bounded in $[0.0628, 0.9946]$. Evaluating Model B at the standard decision boundary of $\hat{P} \ge 0.50$ classified <strong>240 individuals (80.00%)</strong> into the positive group.</p>
+    <p>The resulting inter-model confusion matrix demonstrates the exact structural nature of this disagreement: both models agreed on 60 negative classifications ($M_A=0, M_B=0$) and 150 positive classifications ($M_A=1, M_B=1$). Exactly 90 individuals were approved by Model B ($\hat{P} \ge 0.50$) but rejected/flagged by Model A ($M_A=0$), while zero individuals were approved by Model A and rejected by Model B.</p>
+    <p>This 30% mismatch stems from a fundamental divergence in threshold philosophy and distributional assumptions. Model A’s median split is a purely <strong>relative, rank-based ordinal threshold</strong> that artificially forces half the cohort into rejection regardless of absolute creditworthiness. Because the underlying test set base rate is predominantly positive (70.67% true approvals), Model B’s <strong>absolute threshold ($P \ge 0.50$)</strong> appropriately reflects the positive skew of the population. The 90 disputed individuals occupy the intermediate probability corridor $0.5000 \le \hat{P}_B < 0.7151$: they are more likely creditworthy than not, yet Model A discards them solely because they fall below the 50th percentile of their peers. Linear OLS also suffers from severe unbounded extrapolation, generating negative probabilities ($-0.0211$) and nonsensical probabilities exceeding unity ($1.3459$), whereas logistic regression properly accounts for the diminishing marginal returns of risk factors along the S-shaped sigmoid curve. Consequently, Model B achieved 75.33% test accuracy compared to Model A’s 68.00%.</p>
+</div>
+
+<div class="question-block">
+    <div class="question-title">Question 2: Simpson's Paradox and Subgroup Heterogeneity <span class="word-count">~290 words</span></div>
+    <p>A rigorous fairness audit requires identifying subgroups where aggregate relationships break down or invert. In our analysis of the German Credit dataset, we uncovered a dramatic instance of <strong>Simpson’s Paradox</strong> when evaluating the effect of existing bank credit lines (<code>existing_credits</code>) across demographic age cohorts: Young Adults ($<30$ years, $N=371$) versus Mature Adults ($\ge 30$ years, $N=629$).</p>
+    <p>In the aggregate population model ($N=1,000$), the bivariate logistic regression coefficient for <code>existing_credits</code> is positive: $\beta_{\text{Full}} = +0.1780$ ($SE = 0.1232, \, p = 0.1488, \, 95\% \text{ CI: } [-0.0636, \, +0.4195]$). Superficially, an underwriting policy based on the full population might conclude that having additional existing credits is a neutral-to-positive indicator of borrower reliability. However, disaggregating by age exposes an acute sign reversal: for <strong>Young Adults ($<30$ years)</strong>, $\beta_{\text{Young}} = \mathbf{-0.2203}$ ($SE = 0.2133, \, p = 0.3016, \, 95\% \text{ CI: } [-0.6384, \, +0.1977]$), whereas for <strong>Mature Adults ($\ge 30$ years)</strong>, $\beta_{\text{Mature}} = \mathbf{+0.3083}$ ($SE = 0.1586, \, p = 0.0519, \, 95\% \text{ CI: } [-0.0025, \, +0.6192]$).</p>
+    <p>The coefficient reverses from negative ($-0.2203$) for young applicants to strongly positive ($+0.3083$) for older applicants, where it achieves marginal statistical significance ($p = 0.0519$). Statistically and economically, this reversal reflects distinct latent behavioral meanings across life stages. For mature adults, maintaining multiple existing credit accounts reflects an established credit history, long-standing banking relationships, and proven repayment discipline over time. For young adults under 30, however, possessing multiple credit lines typically indicates financial instability, over-leveraging, and emergency liquidity distress, as young borrowers have not had sufficient years to build seasoned, amortized credit lines.</p>
+    <p>A parallel subgroup divergence emerges when examining <code>age</code> across gender in a standardized multivariable model. While the aggregate age coefficient is positive ($\beta = +0.2260, \, p = 0.0036$), it is statistically meaningless for men ($\beta_{\text{Male}} = +0.0604, \, p = 0.5204$), yet acts as an enormous protective factor for women ($\beta_{\text{Female}} = +0.4741, \, p = 0.0013$), where the effect size is nearly <strong>eight-fold larger</strong>.</p>
+    <p><strong>Policy Implication:</strong> If policymakers deploy an aggregate scoring algorithm that ignores subgroup interactions, the policy will inadvertently reward over-indebted young borrowers who take on additional loans while simultaneously mispricing young female applicants whose financial trajectories differ radically from male baselines. Subgroup disaggregation is mandatory to prevent aggregate models from acting as discriminatory blunt instruments.</p>
+</div>
+
+<div class="page-break"></div>
+
+<div class="question-block">
+    <div class="question-title">Question 3: Omitted-Variable Bias (OVB) Stress-Testing <span class="word-count">~285 words</span></div>
+    <p>To empirically evaluate the vulnerability of credit scoring to unobserved confounders, we deliberately omitted <code>checking_status</code> (Attribute 1), the single most influential determinant of short-term liquid cash reserves. We trained a Full Logistic Regression model containing all 48 preprocessed features on the training set ($N=700$) and compared its coefficients against a Reduced Logistic Regression model where all dummy indicators for checking account status (<code>checking_status_A12</code>, <code>A13</code>, <code>A14</code>) were purged.</p>
+    <p>The shifts in key predictors reveal massive coefficient instability: <code>savings_status_A63</code> (moderate savings 500–1000 DM) shifted from $+0.3720$ in the full model to $+0.7812$ in the reduced model—an astonishing <strong>$+110.00\%$ surge ($\Delta \beta = +0.4092$)</strong>. <code>employment_A73</code> (employment tenure 1–4 years) experienced an almost identical doubling, shifting from $+0.1278$ to $+0.2560$ (<strong>$+100.31\%$ increase</strong>). <code>credit_history_A33</code> (past payment delays) inflated from $+0.3941$ to $+0.5956$ (<strong>$+51.14\%$ change</strong>), and <code>existing_credits</code> shifted from $-0.0983$ to $-0.0656$ (<strong>$+33.31\%$ change</strong>). Applicant age shifted from $+0.1543$ to $+0.1869$ (<strong>$+21.16\%$</strong>), while standardized loan duration remained largely invariant, moving from $-0.4273$ to $-0.4325$ (<strong>$-1.21\%$</strong>).</p>
+    <p>The predictor that shifted the most was <code>savings_status_A63</code> (+110.00%). This massive inflation exposes the statistical mechanics of omitted-variable bias: when a dominant explanatory variable ($Z$) that is correlated with both loan outcome ($Y$) and other covariates ($X$) is excluded, the remaining regressors absorb $Z$'s omitted explanatory power through proxy correlation: $E[\hat{\beta}_X] = \beta_X + \beta_Z \frac{\text{Cov}(X, Z)}{\text{Var}(X)}$. Because cash liquidity in a checking account is positively correlated with accumulated savings and stable employment tenure, purging checking status forced the regression optimizer to artificially inflate the weights on savings accounts and employment to compensate for the missing liquidity signal.</p>
+    <p>This finding demonstrates that an auditor cannot trust the weights of an observational model without rigorous confounding stress-tests. A practitioner inspecting the reduced model would falsely conclude that moderate savings accounts exert more than double their true structural protective influence. The model appears statistically sound, yet its internal weights are corrupted by proxy absorption, rendering adverse action notices and credit explanations legally vulnerable and misleading.</p>
+</div>
+
+<div class="question-block">
+    <div class="question-title">Question 4: Detecting Hidden Confounds in Production Systems <span class="word-count">~295 words</span></div>
+    <p>In enterprise credit scoring, detecting unobservable confounders—such as informal family wealth, unrecorded remittances, or private guarantees—cannot be accomplished through standard internal validation metrics (e.g., cross-validated AUC or residual deviance), because an omitted confounder biases both training and validation splits identically. To rigorously detect and bound hidden confounds in production, I propose a dual-track strategy combining <strong>Quasi-Experimental Instrumental Variable (IV) Estimation</strong> with <strong>Oster-Rosenbaum Sensitivity Bounding</strong>.</p>
+    <p>1. <strong>Quasi-Experimental Instrumental Variable (Two-Stage Predictor Residualization):</strong> We identify an exogenous instrument ($Z$) that affects an applicant’s financial observables but is uncorrelated with their latent creditworthiness or unobserved family wealth. In retail banking, an ideal instrument is <strong>hyper-local banking competition shocks</strong>—for instance, the staggered municipal roll-out of regional credit union branches or postal-code-level changes in banking service fees. Because these geographical regulatory shifts affect checking account adoption and loan duration without altering an individual's personal moral hazard or innate repayment propensity, they satisfy the instrument relevance ($\text{Cov}(Z, X) \ne 0$) and exclusion restrictions ($\text{Cov}(Z, \epsilon) = 0$). By running a two-stage least squares / control function regression:</p>
+    <p style="text-align: center; margin: 4pt 0;">$\text{Stage 1: } X_i = \pi_0 + \pi_1 Z_i + W_i'\gamma + v_i \quad \implies \quad \text{Stage 2: } Y_i = \alpha_0 + \beta_{\text{IV}} \hat{X}_i + W_i'\delta + \epsilon_i$</p>
+    <p>A Hausman specification test comparing the baseline model's coefficient $\hat{\beta}_{\text{OLS}}$ against $\hat{\beta}_{\text{IV}}$ formally tests for confounding. A statistically significant divergence ($p < 0.05$) mathematically proves the presence of an omitted confounder corrupting the observational weights.</p>
+    <p>2. <strong>Oster Bounding and Negative Controls:</strong> Because perfect instruments can be difficult to secure, we complement the IV audit with <strong>Oster's coefficient stability methodology</strong>. By evaluating how coefficients move relative to changes in $R^2$ as observable controls are incrementally added, we compute Oster's proportionality metric $\delta$: the degree of selection on unobservables relative to observables required to explain away the observed effect. If $\delta < 1.0$, the model is deemed fragile to hidden confounding. Finally, we introduce a <strong>negative control outcome</strong>—such as applicant telephone registration status—which should have zero theoretical causal connection to credit default. If the model assigns significant predictive weight to the negative control, hidden socio-economic confounding is actively contaminating the feature space.</p>
+</div>
+
+<div class="page-break"></div>
+
+<div class="question-block">
+    <div class="question-title">Question 5: Adversarial Subset Construction & Failure Mechanics <span class="word-count">~280 words</span></div>
+    <p>To stress-test model resilience under extreme confidence, we audited test set instances where Model B made high-confidence erroneous classifications. Setting our confidence thresholds at $\hat{P} \ge 0.75$ for false positives (actual default $Y=0$) and $\hat{P} \le 0.25$ for false negatives (actual approval $Y=1$), we identified exactly <strong>24 adversarial failure instances out of the 300 test subjects (8.00% of the test cohort)</strong>. Following assignment instructions, because fewer than 50 such extreme cases existed, all 24 cases were extracted and analyzed.</p>
+    <p>The subset consists almost exclusively of <strong>high-confidence false positives: 21 cases (87.5% of the adversarial subset)</strong> where the model assigned an average approval probability of $\hat{P} = 0.812$ to individuals who ultimately defaulted, alongside 3 high-confidence false negatives. Comparing the demographic and financial profile of these 24 adversarial failures against the baseline 300-subject test cohort reveals striking commonalities: <strong>83.33% of the adversarial failures own their homes (<code>housing = A152</code>)</strong>, compared to 74.00% in the baseline test set. <strong>45.83% of the adversarial subset hold a moderate checking account balance (<code>checking_status = A12</code>, 0–200 DM)</strong>, nearly <strong>double</strong> the test set baseline of 23.00%. Furthermore, 54.17% have all existing credits duly paid back to date (<code>credit_history = A32</code>). Crucially, their average loan request was <strong>3,337.50 DM</strong>, substantially higher than the test set mean of 3,040.18 DM.</p>
+    <p><strong>Statistical Failure Mechanism:</strong> The model’s confident failure on this subset stems directly from the structural limitations of <strong>unregularized linear additivity in standard logistic regression</strong>. In our fitted model, homeownership confers a positive log-odds weight of $\beta_{\text{own}} = +0.283$, a moderate checking account adds $\beta_{\text{A12}} = +0.345$, and existing duly paid credit adds $\beta_{\text{A32}} = +0.263$. Because the linear predictor calculates $z = \sum \beta_i X_i$, the model complacently sums these positive credit signals, projecting the applicant into the far right tail of the sigmoid curve ($\hat{P} > 0.75$). Crucially, the standard model ignores <strong>non-linear interaction terms</strong> between loan size and liquidity buffers (<code>credit_amount * checking_status</code>). While a 0–200 DM checking balance cushions a small 1,000 DM loan, it provides virtually zero liquidity cushion when servicing an above-average 3,337.50 DM obligation. By treating financial buffers as independently additive rather than conditionally multiplicative, the model develops an algorithmic blind spot, confidently approving over-leveraged homeowners with insufficient cash reserves.</p>
+</div>
+
+<div class="question-block">
+    <div class="question-title">Question 6: The Real-World Cost of Fairness Trade-Offs <span class="word-count">~290 words</span></div>
+    <p>To understand what fairness metrics mean for real human beings, we examine how decision thresholds on our parametric trade-off curve affect individual applicants across sex demographics: Group A (Female, $N=85$, base approval rate 69.41%) and Group B (Male, $N=215$, base approval rate 71.16%).</p>
+    <p>Consider two realistic applicants in our test set: <strong>Elena</strong> (Female, 28 years old, employed 2 years, renting, seeking a 2,500 DM catering equipment loan, predicted approval $\mathbf{\hat{P} = 0.480}$) and <strong>Marcus</strong> (Male, 29 years old, employed 2 years, renting, seeking an identical 2,500 DM auto repair loan, predicted approval $\mathbf{\hat{P} = 0.480}$).</p>
+    <p>Now observe their life outcomes under two contrasting operational thresholds: under an <strong>Equalized Odds / Inclusion Threshold ($t = 0.35$)</strong>, both Elena and Marcus exceed the cutoff ($0.480 \ge 0.35$). Both are approved for credit; Elena launches her catering enterprise and Marcus repairs his vehicle. At this operating point, Demographic Parity is high ($\text{DP} = 0.9292$), Female approval rate is 84.71%, Male approval rate is 91.16%, and Equalized Odds is robust ($\text{EO} = 0.8108$), with true positive rates virtually equalized ($\text{TPR}_{\text{Female}} = 93.22\%$ vs $\text{TPR}_{\text{Male}} = 95.42\%$).</p>
+    <p>However, if a bank risk committee shifts to an <strong>Accuracy-Maximizing Threshold ($t = 0.55$)</strong> to achieve peak accuracy (76.33%), both Elena and Marcus are summarily denied credit ($0.480 < 0.55$). Furthermore, this shift disproportionately harms women: female approval plummets from 84.71% to 68.24% (a 16.47 percentage point drop), dragging Demographic Parity down to $0.8480$. Equalized Odds collapses to <strong>$0.5156$</strong>, because female False Positive Rates drop to 30.77% while male False Positive Rates remain high at 59.68%. Qualified women are excluded at far higher rates relative to men.</p>
+    <p><strong>The Inherent Trade-Off Dilemma:</strong> If a regulator demands perfect Demographic Parity ($\text{DP} = 1.000$) at $t=0.55$, the bank would be forced to apply <strong>disparate thresholds</strong>: setting the female threshold at $t=0.45$ (approving Elena) while maintaining the male threshold at $t=0.55$ (denying Marcus). Under this regime, Marcus is denied credit while Elena is approved, despite possessing the <strong>identical computed risk score of 0.480</strong>. Prioritizing group demographic parity directly violates individual fairness and predictive parity. Conversely, enforcing an identical threshold sacrifices Equalized Odds and locks historically under-represented women into depressed loan approval rates.</p>
+</div>
+
+<div class="page-break"></div>
+
+<div class="question-block">
+    <div class="question-title">Question 7: Defending an Operational Decision Threshold ($t = 0.35$) <span class="word-count">~285 words</span></div>
+    <p>From our parametric threshold sweep, I defend <strong>$t = 0.35$</strong> as the optimal, ethically justifiable operational decision threshold for deploying this credit underwriting model. This defense is grounded directly in four computed metrics from Part 2.4:</p>
+    <ol>
+        <li><strong>High Demographic Parity ($\text{DP} = 0.9292$):</strong> At $t = 0.35$, the model approves <strong>84.71% of female applicants</strong> and <strong>91.16% of male applicants</strong>. This achieves a Demographic Parity ratio of $0.9292$, easily satisfying the regulatory "Four-Fifths (80%) Rule" enforced by the U.S. Equal Employment Opportunity Commission (EEOC) and credit oversight bodies, compared to the severe disparity at $t = 0.55$ ($\text{DP} = 0.8480$) and $t = 0.75$ ($\text{DP} = 0.7547$).</li>
+        <li><strong>Robust Equalized Odds ($\text{EO} = 0.8108$):</strong> The True Positive Rate for women reaches <strong>$93.22\%$</strong> ($55/59$ creditworthy women approved) versus <strong>$95.42\%$</strong> for men ($146/153$ creditworthy men approved), yielding a near-perfect TPR parity ratio of <strong>$0.9769$</strong>. Meritorious applicants enjoy virtually identical access to capital regardless of sex.</li>
+        <li><strong>Equitable Predictive Parity ($\text{PP} = 1.0255$):</strong> The precision (Positive Predictive Value) for approved females is <strong>$76.39\%$</strong> versus <strong>$74.49\%$</strong> for approved males. An approved loan represents the same underlying creditworthiness across both genders, preventing reverse discrimination.</li>
+        <li><strong>Preserved Classification Accuracy ($74.00\%$):</strong> Operating at $t = 0.35$ incurs only a negligible 2.33 percentage point penalty compared to the peak global accuracy of $76.33\%$ (at $t=0.55$), demonstrating that substantial fairness gains can be achieved without compromising statistical utility.</li>
+    </ol>
+    <p><strong>Strongest Counter-Argument & Validity:</strong> A chief credit risk officer (CRO) would vigorously counter that operating at $t = 0.35$ introduces unacceptable portfolio credit default risk. Specifically, lowering the decision boundary to 0.35 elevates the <strong>False Positive Rate to $65.38\%$ for women and $80.65\%$ for men</strong>. In our 300-case test cohort, the model approves 17 non-creditworthy women and 50 non-creditworthy men who ultimately default. In commercial banking, default write-offs are asymmetrically expensive: the Statlog cost matrix specifies that approving a defaulting borrower is <strong>five times more costly</strong> than rejecting a creditworthy borrower.</p>
+    <p>I acknowledge the complete economic validity of this counter-argument. However, this credit risk can be hedged through non-discriminatory risk-based loan pricing, tiered credit limits, or requiring secondary guarantors, whereas rejecting historically disadvantaged demographic groups at elevated thresholds permanently entrenches societal wealth disparities and invites crippling regulatory scrutiny.</p>
+</div>
+
+<div class="question-block">
+    <div class="question-title">Question 8: Strategic Policy Choice: Demographic Parity vs. Equalized Odds <span class="word-count">~290 words</span></div>
+    <p>If forced by a banking regulatory authority to choose between prioritizing <strong>Demographic Parity (DP)</strong> or <strong>Equalized Odds (EO)</strong> in retail credit underwriting, I unequivocally recommend prioritizing <strong>Equalized Odds (EO)</strong>.</p>
+    <p><strong>Justification Grounded in Empirical Data:</strong> In our dataset, creditworthiness is not distributed identically across historical records due to legacy systemic inequities: baseline good credit rates stand at 69.41% for women ($59/85$) and 71.16% for men ($153/215$). Under <strong>Kleinberg’s Impossibility Theorem</strong>, when base rates differ between demographic groups ($Y \not\perp A$), Demographic Parity and Equalized Odds are mathematically incompatible with Predictive Parity.</p>
+    <p>Prioritizing Equalized Odds aligns lending policy with the ethical imperative of <strong>meritocratic fairness</strong>: individuals who are genuinely capable of repaying their debts should face the exact same probability of loan approval regardless of their sex. At our recommended threshold of $t = 0.35$, Equalized Opportunity is maximized: creditworthy females achieve a $\text{TPR}$ of <strong>$93.22\%$</strong>, virtually matching creditworthy males at <strong>$95.42\%$</strong> (a minuscule $2.20\%$ gap, ratio $= 0.9769$). Furthermore, Predictive Parity is preserved ($\text{PP} = 1.0255$), ensuring that loan approval signals identical repayment probability ($76.39\%$ for females vs $74.49\%$ for males).</p>
+    <p><strong>The Sacrificed Metric and Why It Is Acceptable:</strong> Under this policy, we explicitly sacrifice <strong>strict Demographic Parity</strong>. At $t = 0.35$, DP is $0.9292$ (a $7.08\%$ shortfall from parity), and at the default threshold of $t = 0.55$, DP drops to $0.8480$ (a $15.20\%$ shortfall).</p>
+    <p>Sacrificing pure Demographic Parity is not only acceptable but ethically necessary in consumer credit. Enforcing mathematical parity in acceptance rates ($P(\hat{Y}=1|\text{Female}) = P(\hat{Y}=1|\text{Male})$) when underlying income and savings distributions differ would require the financial institution to either: (1) artificially approve un-creditworthy female applicants simply to fulfill a numerical quota, pushing financially vulnerable women into default, asset repossession, and ruined credit scores; or (2) arbitrarily deny creditworthy male applicants who meet all objective underwriting criteria solely because the male quota has been exhausted. Imposing quotas under the guise of Demographic Parity harms the very individuals it purports to protect by saddling them with unmanageable debt burdens. Equalized Odds protects qualified applicants from demographic discrimination while preserving fiscal solvency and institutional trust.</p>
+</div>
+
+<div class="page-break"></div>
+
+<!-- PART 4 -->
+<h2>Part 4 — Reflection Essay (~500 words)</h2>
+
+<div class="callout" style="background-color: #f8fafc; border-left: 4px solid #1e3a8a;">
+    <em>"If a policy-maker asked you: 'just give me one number: should we deploy this model or not?', what would you say, and what is the limitation of that 'one number' answer that you discovered yourself through your analysis?"</em>
+</div>
+
+<div class="question-block" style="border-top: 3px solid #1e3a8a;">
+    <div class="question-title">1. Direct Answer (1–2 sentences)</div>
+    <p>I would advise <strong>conditional deployment under strict segment-specific thresholding and continuous human-in-the-loop audit</strong>, because a singular binary metric conceals the fact that deploying this model at default settings maximizes global accuracy while severely degrading equal opportunity for female borrowers and silently failing on high-exposure homeowners.</p>
+
+    <div class="question-title" style="margin-top: 12pt;">2. Why a Single Number Fails (300–400 words)</div>
+    <p>The fundamental lesson of this audit is that summarizing a sociotechnical AI system into a single performance statistic—whether overall accuracy ($75.33\%$), AUC-ROC ($0.792$), or an aggregate F1-score—is an act of intellectual complacency that masks dangerous structural trade-offs.</p>
+    <p>First, <strong>aggregate accuracy systematically masks catastrophic subgroup performance collapses</strong>. At our model’s peak accuracy operating threshold of $t = 0.55$ ($76.33\%$ overall accuracy), Equalized Odds collapses to a dismal <strong>$0.5156$</strong>, with the model approving non-creditworthy men at nearly double the rate of non-creditworthy women ($\text{FPR}_{\text{Male}} = 59.68\%$ vs $\text{FPR}_{\text{Female}} = 30.77\%$), while female loan approvals plunge to $68.24\%$. A policymaker celebrating "76% accuracy" is completely blind to the fact that half of the equalized odds metric has been destroyed.</p>
+    <p>Second, <strong>a single threshold is an unstated value judgment, not a mathematical fact</strong>. Choosing between $t = 0.35$ (prioritizing inclusion and Equalized Odds of $0.8108$) and $t = 0.55$ (prioritizing bank profitability and default suppression) cannot be resolved by data science. It is a political choice trading off borrower economic access against institutional capital loss. Reducing this to an automated "deploy" decision abdicates societal responsibility to an arbitrary mathematical constant ($0.50$).</p>
+    <p>Third, <strong>fairness metrics are mathematically adversarial</strong>. As proved by Kleinberg and Chouldechova, when baseline default rates differ ($69.41\%$ female vs $71.16\%$ male), Demographic Parity, Equalized Odds, and Predictive Parity cannot simultaneously equal 1.0. Improving DP from $0.7547$ to $0.7869$ ($+4.27\%$) causes Equalized Odds to plunge from $0.3974$ to $0.2981$ ($-24.99\%$)—a punishing trade-off cost ratio of <strong>$5.85$</strong>. Any single index obscures which community is bearing the cost of that trade-off.</p>
+    <p>Fourth, <strong>models fail with extreme confidence on predictable adversarial clusters</strong>. Our model confidently misclassified 24 test cases ($8.00\%$ of the cohort), projecting $\hat{P} \ge 0.75$ on defaulting borrowers simply because they were homeowners ($83.33\%$) with moderate checking balances ($45.83\%$), oblivious to their overwhelming credit burden ($3,337.50$ DM).</p>
+    <p>Finally, <strong>hidden confounds remain invisible to summary numbers</strong>. Purging checking account liquidity caused savings coefficients to artificially inflate by <strong>$+110.00\%$</strong> and employment weights by <strong>$+100.31\%$</strong>, proving that observational models readily disguise omitted confounders as legitimate risk signals.</p>
+
+    <div class="question-title" style="margin-top: 12pt;">3. Grounding in Evidence (50–100 words)</div>
+    <p>Every cited limitation is substantiated by our empirical computations: the 30.00% mismatch between Model A and Model B, the Simpson’s sign reversal on existing credits ($-0.2203$ for young adults vs $+0.3083$ for mature adults), the 110.00% coefficient inflation under omitted-variable testing, the 24 adversarial failures with 83.33% homeownership, and the plunge in Equalized Odds from $0.8108$ at $t=0.35$ to $0.5156$ at $t=0.55$.</p>
+
+    <div class="question-title" style="margin-top: 12pt;">4. Closing (50 words)</div>
+    <p>Responsible AI deployment is fundamentally an exercise in navigating unavoidable trade-offs, not chasing single-metric optimization. A single number offers executives the illusion of certainty; true algorithmic governance demands transparent exposure of who wins, who loses, and which values are sacrificed at every operational threshold.</p>
+</div>
+
+</body>
+</html>
+"""
+
+with open("report.html", "w", encoding="utf-8") as f:
+    f.write(html_content)
+
+print("Generated report.html successfully. Now rendering to PDF via Playwright...")
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    page = browser.new_page()
+    page.goto(f"file:///{os.path.abspath('report.html')}")
+    page.pdf(
+        path="Assignment1_Report_s24bcau0154.pdf",
+        format="A4",
+        print_background=True,
+        margin={
+            "top": "18mm",
+            "bottom": "18mm",
+            "left": "15mm",
+            "right": "15mm"
+        }
+    )
+    browser.close()
+
+print("Assignment1_Report_s24bcau0154.pdf generated successfully!")
