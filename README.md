@@ -28,9 +28,8 @@ Using the **German Credit dataset ($N=1,000$)**, this repository delivers an end
 ├── assignment1_german_credit_analysis.ipynb   # Main reproducible Jupyter Notebook (Code + Outputs)
 ├── german.data                               # Raw German Credit dataset (1,000 rows, 20 attributes)
 ├── german.doc                                # Official UCI Hofmann dataset documentation
-├── Assignment1_Report_s24bcau0154.pdf        # Complete 6-Page Submission PDF Report
-├── increase_font.pdf                         # 6-Page Submission PDF with 10pt font
-├── increase_font.docx                        # 6-Page Submission Word document
+├── ai and society assesssment S24BCAU0154.docx # Official Submission Report (Word document)
+├── ai and society assesssment S24BCAU0154.pdf  # Official Submission Report (PDF document)
 ├── figures/                                  # High-resolution generated audit plots
 │   ├── part1_model_comparison.png            # Part 1 prediction distributions & mismatch matrix
 │   ├── part2_1_simpsons_paradox.png          # Part 2.1 Simpson's paradox & gender divergence

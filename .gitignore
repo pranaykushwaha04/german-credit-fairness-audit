@@ -19,3 +19,7 @@ ENV/
 # OS generated
 .DS_Store
 Thumbs.db
+
+# Old generated reports (replaced by user report)
+Assignment1_Report_*
+increase_font.*
